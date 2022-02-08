@@ -13,8 +13,8 @@ import org.http4s.blaze.server.*
 
 object packages {
   def routes = HttpRoutes.of[IO] {
-    case GET -> Root / "packages" => Ok(pkg.findAll())
-    case GET -> Root / "packages" / name => pkg.findByName(name).flatMap {
+    case GET -> Root => Ok(pkg.findAll())
+    case GET -> Root / name => pkg.findByName(name).flatMap {
       case Some(pkg) => Ok(pkg)
       case None => NotFound()
     }
