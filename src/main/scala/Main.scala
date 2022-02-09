@@ -1,15 +1,17 @@
 package fr.thekinrar.autopkg
 
+import aur.AurClient
+import services.{AurService, PackagesService}
+
 import cats.effect.*
 import cats.implicits.*
-import fr.thekinrar.autopkg.aur.AUR
 import org.http4s.HttpRoutes
-import org.http4s.syntax.*
-import org.http4s.dsl.io.*
-import org.http4s.implicits.*
 import org.http4s.blaze.client.*
 import org.http4s.blaze.server.*
+import org.http4s.dsl.io.*
+import org.http4s.implicits.*
 import org.http4s.server.Router
+import org.http4s.syntax.*
 
 object Main extends IOApp:
   val server =
@@ -18,7 +20,8 @@ object Main extends IOApp:
         .resource
 
       routes = Router(
-        "/packages" -> services.packages.routes
+        "/aur" -> new AurService(new AurClient(httpClient)).routes,
+        "/packages" -> new PackagesService().routes,
       )
 
       httpServer <- BlazeServerBuilder[IO]
