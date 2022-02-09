@@ -19,5 +19,9 @@ class PackagesService {
       case Some(pkg) => Ok(pkg)
       case None => NotFound()
     }
+    case PUT -> Root / name => for {
+      _ <- pkg.insert(name)
+      ret <- NoContent()
+    } yield ret
   }
 }

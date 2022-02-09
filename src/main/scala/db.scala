@@ -20,4 +20,8 @@ object pkg {
   def findAll(): IO[List[Package]] =
     sql"select * from packages"
       .query[Package].to[List].transact(xa)
+
+  def insert(name: String): IO[Unit] =
+    sql"insert into packages (name) values ($name)"
+      .update.run.transact(xa).map(_ => ())
 }
