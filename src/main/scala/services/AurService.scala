@@ -13,8 +13,6 @@ import org.http4s.implicits.*
 import org.http4s.syntax.*
 
 class AurService(aurClient: AurClient) {
-  implicit val encPackageInfo: EntityEncoder[IO, PackageInfo] = jsonEncoderOf[IO, PackageInfo]
-
   def routes = HttpRoutes.of[IO] {
     case GET -> Root / name => aurClient.info(name).flatMap {
       case Some(value) => Ok(value)
