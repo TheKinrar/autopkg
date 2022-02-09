@@ -6,7 +6,7 @@ import cats.implicits.*
 import io.circe.*
 import io.circe.syntax.*
 import org.http4s.*
-import org.http4s.circe.CirceEntityDecoder.*
+import org.http4s.circe.jsonOf
 import org.http4s.client.*
 import org.http4s.client.middleware.Logger
 import org.http4s.syntax.literals.uri
@@ -23,14 +23,20 @@ class AurClient(client: Client[IO]) {
         .withQueryParam("arg", name)
     )
 
+    implicit val dec: EntityDecoder[IO, AurResponse] = jsonOf[IO, AurResponse]
     client.expect[AurResponse](req)
       .map(r => if r.resultCount == 0 then None else Some(r.results.head))
+
+  def pkgbuild(name: String): IO[String] =
+    val req = Request[IO](
+      method = Method.GET,
+      uri = uri"https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD"
+        .withQueryParam("h", name)
+    )
+
+    client.expect[String](req)
 }
 
-/*
-No need for http4s' Entity(De|En)coders here, we're importing org.http4s.circe.CirceEntityDecoder.* which will create
-them automatically for every A with a (De|En)coder[A] available.
-*/
 implicit val decodePackageInfo: Decoder[PackageInfo] =
   Decoder.forProduct6("Name", "PackageBase", "Version", "URLPath", "Depends", "MakeDepends")(PackageInfo.apply)
 implicit val encodePackageInfo: Encoder[PackageInfo] =
