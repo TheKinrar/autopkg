@@ -10,6 +10,7 @@ lazy val root = (project in file("."))
     name := "autopkg",
     idePackagePrefix := Some("fr.thekinrar.autopkg"),
     libraryDependencies ++= Seq(
+      "com.github.scopt"      %% "scopt"               % "4.0.1",
       "org.typelevel"         %% "cats-effect"         % "3.3.5",
       "org.http4s"            %% "http4s-blaze-server" % http4sVersion,
       "org.http4s"            %% "http4s-blaze-client" % http4sVersion,
