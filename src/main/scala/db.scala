@@ -25,3 +25,9 @@ object pkg {
     sql"insert into packages (name) values ($name)"
       .update.run.transact(xa).map(_ => ())
 }
+
+object builds {
+  def findLatestSuccessful(pkg: String): IO[Option[Build]] =
+    sql"select * from builds where package=$pkg and success=true order by id desc limit 1"
+      .query[Build].option.transact(xa)
+}
