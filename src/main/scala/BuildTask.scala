@@ -16,13 +16,10 @@ class BuildTask(aurClient: AurClient) {
   def run(): IO[Unit] =
     for {
       packages <- pkg.findAll()
-      packagesWithInfo <- withInfo(packages)
+      packagesWithInfo <- packages.traverse(withInfo)
       results <- packagesWithInfo.traverse(processPackage)
       _ <- results.traverse(IO.println)
     } yield IO.unit
-
-  def withInfo(l: List[Package]): IO[List[(Package, Option[PackageInfo])]] =
-    l.traverse(withInfo)
 
   def withInfo(pkg: Package): IO[(Package, Option[PackageInfo])] =
     for {
@@ -36,10 +33,22 @@ class BuildTask(aurClient: AurClient) {
     else
       val info = pkgWithInfo._2.get
 
-      IO(SuccessfulBuild(pkg))
+      builds.findLatestSuccessful(pkg.id)
+        .flatMap {
+          case Some(latest) =>
+            if latest.version != info.version
+            then buildPackage(pkg, info)
+            else IO(SkippedBuild(pkg))
+          case None => buildPackage(pkg, info)
+        }
+
+  def buildPackage(pkg: Package, info: PackageInfo): IO[BuildResult] =
+    IO(SuccessfulBuild(pkg))
+}
 
 abstract class BuildResult {
   def pkg: Package
 }
 case class SuccessfulBuild(pkg: Package) extends BuildResult
+case class SkippedBuild(pkg: Package) extends BuildResult
 case class FailedBuild(pkg: Package, error: String) extends BuildResult

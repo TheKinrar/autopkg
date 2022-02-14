@@ -27,7 +27,7 @@ object pkg {
 }
 
 object builds {
-  def findLatestSuccessful(pkg: String): IO[Option[Build]] =
-    sql"select * from builds where package=$pkg and success=true order by id desc limit 1"
+  def findLatestSuccessful(pkg: Long): IO[Option[Build]] =
+    sql"select * from builds where package=$pkg order by id desc limit 1"
       .query[Build].option.transact(xa)
 }
