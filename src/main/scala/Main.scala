@@ -5,6 +5,7 @@ import services.{AurService, PackagesService}
 
 import cats.effect.*
 import cats.implicits.*
+import fr.thekinrar.autopkg.docker.DockerClient
 import org.http4s.HttpRoutes
 import org.http4s.blaze.client.*
 import org.http4s.blaze.server.*
@@ -35,7 +36,7 @@ object Main extends IOApp:
     for {
       httpClient <- BlazeClientBuilder[IO]
         .resource
-    } yield new BuildTask(new AurClient(httpClient))
+    } yield new BuildTask(new AurClient(httpClient), new DockerClient())
 
   val cliBuilder = OParser.builder[CliConfig]
   val cliParser = {

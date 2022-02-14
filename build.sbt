@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "commons-io"             %  "commons-io"                 % "2.11.0",
       "com.github.docker-java" % "docker-java-core"            % dockerVersion,
-      "com.github.docker-java" % "docker-java-transport-https" % dockerVersion,
+      "com.github.docker-java" % "docker-java-transport-httpclient5" % dockerVersion,
       "com.github.scopt"       %% "scopt"                      % "4.0.1",
       "org.typelevel"          %% "cats-effect"                % "3.3.5",
       "org.http4s"             %% "http4s-blaze-server"        % http4sVersion,
