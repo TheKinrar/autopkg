@@ -27,3 +27,11 @@ lazy val root = (project in file("."))
       "io.circe"               %% "circe-generic"              % circeVersion,
     )
   )
+
+ThisBuild / assemblyMergeStrategy := {
+  case "module-info.class" => MergeStrategy.discard
+  case "META-INF/versions/9/module-info.class" => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
