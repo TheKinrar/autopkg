@@ -5,12 +5,14 @@ import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 
+import sys.env
+
 val xa = Transactor.fromDriverManager[IO](
-  "org.postgresql.Driver", "jdbc:postgresql://localhost/autopkg", "autopkg", "autopkg"
+  "org.postgresql.Driver", sys.env("AUTOPKG_DB_URI"), sys.env("AUTOPKG_DB_USER"), sys.env("AUTOPKG_DB_PASSWORD")
 )
 
-case class Package(id: Long, name: String)
-case class Build(id: Long, pkg: String, version: String)
+case class Package(name: String)
+case class Build(pkg: String, id: Long, version: String, success: Boolean)
 
 object pkg {
   def findByName(name: String): IO[Option[Package]] =
@@ -27,7 +29,15 @@ object pkg {
 }
 
 object builds {
-  def findLatestSuccessful(pkg: Long): IO[Option[Build]] =
+  def findLatest(pkg: String): IO[Option[Build]] =
     sql"select * from builds where package=$pkg order by id desc limit 1"
       .query[Build].option.transact(xa)
+
+  def findLatestSuccessful(pkg: String): IO[Option[Build]] =
+    sql"select * from builds where package=$pkg AND success=true order by id desc limit 1"
+      .query[Build].option.transact(xa)
+
+  def insert(id: Long, pkg: String, version: String, success: Boolean): IO[Unit] =
+    sql"insert into builds (id, package, version, success) values ($id, $pkg, $version, $success)"
+      .update.run.transact(xa).map(_ => ())
 }
