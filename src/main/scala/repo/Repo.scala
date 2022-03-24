@@ -12,6 +12,6 @@ import scala.sys.process.*
 
 object Repo {
   def add(db: File, pkg: File): IO[Unit] = IO {
-    "repo-add " + db.getAbsolutePath + " " + pkg.getAbsolutePath !!
+    "repo-add -R " + db.getAbsolutePath + " " + pkg.getAbsolutePath !!
   }
 }
