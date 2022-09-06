@@ -20,10 +20,11 @@ class DockerClient {
     .build()
   val client = DockerClientImpl.getInstance(clientConfig, httpClient)
 
-  def createContainer(path: String): IO[Container] = IO {
+  def createContainer(name: String, path: String): IO[Container] = IO {
     Container(
       client.createContainerCmd("registry.kinrar.io/autopkg-builder")
         .withHostConfig(HostConfig().withBinds(Bind(path, Volume("/var/lib/builder"))))
+        .withName("autopkg-builder-" + name)
         .exec()
         .getId,
       this
