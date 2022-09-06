@@ -1,6 +1,7 @@
 package fr.thekinrar.autopkg
 
 import aur.{AurClient, PackageInfo}
+import discord.Discord
 import docker.DockerClient
 import repo.Repo
 import services.{AurService, PackagesService}
@@ -24,7 +25,9 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
       packages <- pkg.findAll()
       packagesWithInfo <- packages.traverse(withInfo)
       results <- packagesWithInfo.traverse(processPackage)
-      _ <- results.traverse(IO.println)
+      filteredResults = results.filter(!_.isInstanceOf[SkippedBuild])
+      _ <- filteredResults.traverse(IO.println)
+      _ <- Discord.publishResults(filteredResults)
     } yield IO.unit
 
   def withInfo(pkg: Package): IO[(Package, Option[PackageInfo])] =
@@ -43,12 +46,12 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
         .flatMap {
           case Some(latest) =>
             if latest.version != info.version
-            then buildPackage(pkg, info)
+            then buildPackage(pkg, info, Some(latest.version))
             else IO(SkippedBuild(pkg))
-          case None => buildPackage(pkg, info)
+          case None => buildPackage(pkg, info, None)
         }
 
-  def buildPackage(pkg: Package, info: PackageInfo): IO[BuildResult] =
+  def buildPackage(pkg: Package, info: PackageInfo, prev: Option[String]): IO[BuildResult] =
     def postBuild(exitCode: Int, tmpDir: File): IO[BuildResult] =
       if exitCode == 0 then installPackages(tmpDir)
       else IO(FailedBuild(pkg, "Exit code " + exitCode))
@@ -64,7 +67,7 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
       for {
         files <- listFiles(File(tmpDir, "pkgdest"))
         _ <- files.traverse(installPackage)
-      } yield SuccessfulBuild(pkg)
+      } yield SuccessfulBuild(pkg, prev, info.version)
 
     def insertBuild(res: BuildResult): IO[Unit] = res match {
       case FailedBuild(pkg, error) =>
@@ -73,7 +76,7 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
           case None => builds.insert(1, pkg.name, info.version, false)
         }
       case SkippedBuild(pkg) => IO.unit
-      case SuccessfulBuild(pkg) =>
+      case SuccessfulBuild(pkg, prev, next) =>
         builds.findLatest(pkg.name).flatMap {
           case Some(latest) => builds.insert(latest.id + 1, pkg.name, info.version, true)
           case None => builds.insert(1, pkg.name, info.version, true)
@@ -116,9 +119,9 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
   }
 }
 
-abstract class BuildResult {
+sealed trait BuildResult {
   def pkg: Package
 }
-case class SuccessfulBuild(pkg: Package) extends BuildResult
+case class SuccessfulBuild(pkg: Package, prev: Option[String], next: String) extends BuildResult
 case class SkippedBuild(pkg: Package) extends BuildResult
 case class FailedBuild(pkg: Package, error: String) extends BuildResult
