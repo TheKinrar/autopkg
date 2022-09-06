@@ -14,4 +14,8 @@ class Container(id: String, dockerClient: DockerClient) {
     dockerClient.client.waitContainerCmd(id).exec(cb)
     cb.awaitStatusCode()
   }
+  
+  def remove(): IO[Unit] = IO {
+    dockerClient.client.removeContainerCmd(id).exec()
+  }
 }

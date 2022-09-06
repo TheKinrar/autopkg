@@ -92,9 +92,10 @@ class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
     for {
       tmpDir <- makeTempDir(pkg.name)
       _ <- copyURLToFile("https://aur.archlinux.org" + info.snapshotURL, File(tmpDir, "src.tar.gz"))
-      container <- dockerClient.createContainer(tmpDir.getAbsolutePath)
+      container <- dockerClient.createContainer(pkg.name, tmpDir.getAbsolutePath)
       _ <- container.start()
       exitCode <- container.waitFor()
+      _ <- if !sys.env.contains("AUTOPKG_KEEP") then container.remove() else IO.unit
       res <- postBuild(exitCode, tmpDir)
       _ <- insertBuild(res)
       _ <- deleteDirectory(tmpDir)
