@@ -22,7 +22,13 @@ import java.nio.file.Files
 class BuildTask(aurClient: AurClient, dockerClient: DockerClient) {
   def run(): IO[Unit] =
     for {
-      packages <- pkg.findAll()
+      packages <- sys.env.get("AUTOPKG_ONLY") match {
+        case Some(name) => pkg.findByName(name).flatMap {
+          case Some(pkg) => IO.pure(List(pkg))
+          case None => IO.raiseError(Exception(name + " not found (autopkg_only)"))
+        }
+        case None => pkg.findAll()
+      }
       packagesWithInfo <- packages.traverse(withInfo)
       results <- packagesWithInfo.traverse(processPackage)
       filteredResults = results.filter(!_.isInstanceOf[SkippedBuild])
